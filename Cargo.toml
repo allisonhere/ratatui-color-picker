@@ -1,0 +1,18 @@
+[package]
+name = "ratatui-color-picker"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "An interactive terminal color picker for ratatui: RGB sliders, an HSL field + lightness slider, hex input, inline numeric editing, and keyboard + mouse support."
+repository = "https://github.com/allisonhere/ratatui-color-picker"
+homepage = "https://github.com/allisonhere/ratatui-color-picker"
+readme = "README.md"
+keywords = ["ratatui", "tui", "color", "picker", "widget"]
+categories = ["command-line-interface"]
+
+[dependencies]
+ratatui = "0.30"
+palette = "0.7"
+
+[dev-dependencies]
+crossterm = "0.29"
