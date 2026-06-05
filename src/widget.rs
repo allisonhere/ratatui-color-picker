@@ -298,7 +298,7 @@ impl StatefulWidget for ColorPicker {
                     .title(if value_focus { " V \u{25cf} " } else { " V " })
                     .title_style(
                         Style::new()
-                            .fg(if value_focus { t.accent_fg } else { t.muted })
+                            .fg(t.text)
                             .add_modifier(if value_focus { Modifier::BOLD } else { Modifier::empty() }),
                     )
                     .border_type(if value_focus { BorderType::Double } else { BorderType::Rounded })
