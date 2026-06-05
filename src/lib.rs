@@ -109,6 +109,8 @@ pub enum ColorPickerFocus {
 pub enum ColorDragTarget {
     HslField,
     LightnessSlider,
+    /// One of the three RGB sliders (0 = R, 1 = G, 2 = B).
+    RgbSlider(usize),
 }
 
 /// A text-editable numeric/hex field.
@@ -153,6 +155,8 @@ pub struct PickerRects {
     pub hex_field: Rect,
     pub rgb_fields: [Rect; 3],
     pub hsl_fields: [Rect; 3],
+    /// The draggable bar of each RGB slider (R, G, B). Zero-sized in HSL mode.
+    pub rgb_slider_bars: [Rect; 3],
 }
 
 impl Default for PickerRects {
@@ -166,6 +170,7 @@ impl Default for PickerRects {
             hex_field: zero,
             rgb_fields: [zero; 3],
             hsl_fields: [zero; 3],
+            rgb_slider_bars: [zero; 3],
         }
     }
 }
@@ -364,6 +369,17 @@ impl ColorEditor {
             let mut rgb = self.rgb;
             rgb[idx] = (i32::from(rgb[idx]) + delta).clamp(0, 255) as u8;
             self.set_rgb(rgb);
+        }
+    }
+
+    /// Set an RGB channel (0 = R, 1 = G, 2 = B) from a 0.0..=1.0 position along its
+    /// slider — e.g. a mouse click/drag fraction. Focuses that slider.
+    pub fn set_rgb_slider_frac(&mut self, channel: usize, x_frac: f32) {
+        if channel < 3 {
+            let mut rgb = self.rgb;
+            rgb[channel] = (x_frac.clamp(0.0, 1.0) * 255.0).round() as u8;
+            self.set_rgb(rgb);
+            self.focus = ColorPickerFocus::RgbSlider(channel);
         }
     }
 
@@ -633,6 +649,26 @@ pub(crate) fn body_rows(inner: Rect) -> [Rect; 3] {
     .areas(inner)
 }
 
+/// The three RGB slider bar rectangles inside the "Channels" block (`main_view`).
+/// Shared between [`picker_layout`] and the widget so the drawn bar and the
+/// draggable hit-box stay aligned. Layout: ` R ` label (3) + bar + value (gutter 5).
+pub(crate) fn rgb_slider_bar_rects(main_view: Rect) -> [Rect; 3] {
+    if main_view.width < 2 || main_view.height < 2 {
+        return [Rect::new(0, 0, 0, 0); 3];
+    }
+    let inner_x = main_view.x + 1;
+    let inner_y = main_view.y + 1;
+    let inner_w = main_view.width - 2;
+    let bar_x = inner_x + 3;
+    let bar_w = inner_w.saturating_sub(8);
+    std::array::from_fn(|i| Rect {
+        x: bar_x,
+        y: inner_y + (i as u16) * 2,
+        width: bar_w,
+        height: 1,
+    })
+}
+
 pub fn picker_layout(overlay: Rect, mode: ColorPickerMode) -> PickerRects {
     let inner = Rect::new(
         overlay.x + 1,
@@ -669,6 +705,10 @@ pub fn picker_layout(overlay: Rect, mode: ColorPickerMode) -> PickerRects {
         Layout::horizontal([Constraint::Fill(1), Constraint::Length(0)]).areas(hex_row);
     let rgb_fields = split_three(rgb_row);
     let hsl_fields = split_three(hsl_row);
+    let rgb_slider_bars = match mode {
+        ColorPickerMode::RgbSliders => rgb_slider_bar_rects(main_view),
+        ColorPickerMode::HslField => [Rect::new(0, 0, 0, 0); 3],
+    };
     PickerRects {
         overlay,
         mode_switch,
@@ -677,6 +717,7 @@ pub fn picker_layout(overlay: Rect, mode: ColorPickerMode) -> PickerRects {
         hex_field,
         rgb_fields,
         hsl_fields,
+        rgb_slider_bars,
     }
 }
 
@@ -766,6 +807,30 @@ mod tests {
         editor.focus = ColorPickerFocus::ModeToggle;
         editor.focus_next(true); // reverse from first wraps to last
         assert_eq!(editor.focus, ColorPickerFocus::HslFieldValue(2));
+    }
+
+    #[test]
+    fn rgb_slider_frac_sets_channel() {
+        let mut e = ColorEditor::from_rgb(0, 0, 0);
+        e.set_rgb_slider_frac(0, 1.0);
+        assert_eq!(e.rgb[0], 255);
+        e.set_rgb_slider_frac(0, 0.5);
+        assert_eq!(e.rgb[0], 128); // round(127.5)
+        assert_eq!(e.focus, ColorPickerFocus::RgbSlider(0));
+    }
+
+    #[test]
+    fn layout_exposes_rgb_slider_bars() {
+        let rects = picker_layout(Rect::new(0, 0, 76, 24), ColorPickerMode::RgbSliders);
+        for bar in rects.rgb_slider_bars {
+            assert!(bar.width > 0 && bar.height == 1);
+            // bar sits inside the Channels block (main_view)
+            assert!(bar.x >= rects.main_view.x);
+            assert!(bar.x + bar.width <= rects.main_view.x + rects.main_view.width);
+        }
+        // HSL mode exposes no slider bars.
+        let hsl = picker_layout(Rect::new(0, 0, 76, 24), ColorPickerMode::HslField);
+        assert!(hsl.rgb_slider_bars.iter().all(|b| b.width == 0));
     }
 
     #[test]

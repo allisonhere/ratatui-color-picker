@@ -130,6 +130,10 @@ fn run(
                                         editor.toggle_mode();
                                     }
                                 }
+                                ColorPickerFocus::RgbSlider(i) => {
+                                    editor.set_drag_target(Some(ColorDragTarget::RgbSlider(i)));
+                                    update_drag(editor, ColorDragTarget::RgbSlider(i), m.column, m.row, &rects);
+                                }
                                 ColorPickerFocus::HslField => {
                                     editor.set_drag_target(Some(ColorDragTarget::HslField));
                                     update_drag(editor, ColorDragTarget::HslField, m.column, m.row, &rects);
@@ -167,6 +171,14 @@ fn update_drag(
     rects: &PickerRects,
 ) {
     match target {
+        ColorDragTarget::RgbSlider(i) => {
+            let bar = rects.rgb_slider_bars[i];
+            if bar.width > 0 {
+                let x = column.saturating_sub(bar.x).min(bar.width.saturating_sub(1));
+                let x_frac = x as f32 / bar.width.saturating_sub(1).max(1) as f32;
+                editor.set_rgb_slider_frac(i, x_frac);
+            }
+        }
         ColorDragTarget::HslField => {
             if rects.main_view.width > 0 && rects.main_view.height > 0 {
                 let x = column

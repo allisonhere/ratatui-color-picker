@@ -97,7 +97,7 @@ cargo run --example demo
 Tab/Shift-Tab move focus, `M` toggles RGB/HSL, arrows nudge (in the HSL field ←→ change hue
 and ↑↓ change saturation), Enter edits a field, `#` jumps to hex, Esc cancels, `q` quits (and
 prints the picked color). **Mouse** works too — click a control to focus it, and click/drag
-inside the HSL field or lightness slider to pick.
+the RGB sliders, the HSL field, or the lightness slider to set a value.
 
 ## Status
 

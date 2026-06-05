@@ -162,7 +162,8 @@ impl StatefulWidget for ColorPicker {
                     .style(Style::new().bg(t.surface_bg));
                 let channels_inner = channels_block.inner(rects.main_view);
                 channels_block.render(rects.main_view, buf);
-                let slider_width = channels_inner.width.saturating_sub(8) as usize;
+                // Same geometry the layout exposes for mouse hit-testing.
+                let slider_width = rects.rgb_slider_bars[0].width as usize;
                 for (idx, label) in ["R", "G", "B"].into_iter().enumerate() {
                     let row_rect = Rect {
                         x: channels_inner.x,
