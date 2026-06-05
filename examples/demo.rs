@@ -79,14 +79,14 @@ fn run(
                             let _ = cb.set_text(editor.hex());
                         }
                     }
-                    KeyCode::Enter => match editor.focus {
+                    KeyCode::Enter => match editor.focus() {
                         ColorPickerFocus::HexField
                         | ColorPickerFocus::RgbField(_)
                         | ColorPickerFocus::HslFieldValue(_) => editor.start_editing_focused(),
                         ColorPickerFocus::ModeToggle => editor.toggle_mode(),
                         _ => {}
                     },
-                    KeyCode::Up => match editor.focus {
+                    KeyCode::Up => match editor.focus() {
                         ColorPickerFocus::HslField => {
                             editor.nudge_hsl_field(0.0, if shift { 10.0 } else { 2.0 })
                         }
@@ -94,7 +94,7 @@ fn run(
                             editor.adjust_focused_numeric(step);
                         }
                     },
-                    KeyCode::Down => match editor.focus {
+                    KeyCode::Down => match editor.focus() {
                         ColorPickerFocus::HslField => {
                             editor.nudge_hsl_field(0.0, if shift { -10.0 } else { -2.0 })
                         }
@@ -102,14 +102,14 @@ fn run(
                             editor.adjust_focused_numeric(-step);
                         }
                     },
-                    KeyCode::Right => match editor.focus {
+                    KeyCode::Right => match editor.focus() {
                         ColorPickerFocus::RgbSlider(_) => editor.move_rgb_slider_focus(false),
                         ColorPickerFocus::HslField => {
                             editor.nudge_hsl_field(if shift { 20.0 } else { 5.0 }, 0.0)
                         }
                         _ => editor.focus_next(false),
                     },
-                    KeyCode::Left => match editor.focus {
+                    KeyCode::Left => match editor.focus() {
                         ColorPickerFocus::RgbSlider(_) => editor.move_rgb_slider_focus(true),
                         ColorPickerFocus::HslField => {
                             editor.nudge_hsl_field(if shift { -20.0 } else { -5.0 }, 0.0)
@@ -120,7 +120,7 @@ fn run(
                 }
             }
             Event::Mouse(m) => {
-                let rects = picker_layout(area, editor.mode);
+                let rects = picker_layout(area, editor.mode());
                 match m.kind {
                     MouseEventKind::Down(MouseButton::Left) => {
                         if let Some(focus) = editor.focus_for_point(&rects, m.column, m.row) {
@@ -132,28 +132,46 @@ fn run(
                                     } else {
                                         ColorPickerMode::RgbSliders
                                     };
-                                    if editor.mode != clicked {
+                                    if editor.mode() != clicked {
                                         editor.toggle_mode();
                                     }
                                 }
                                 ColorPickerFocus::RgbSlider(i) => {
                                     editor.set_drag_target(Some(ColorDragTarget::RgbSlider(i)));
-                                    update_drag(editor, ColorDragTarget::RgbSlider(i), m.column, m.row, &rects);
+                                    update_drag(
+                                        editor,
+                                        ColorDragTarget::RgbSlider(i),
+                                        m.column,
+                                        m.row,
+                                        &rects,
+                                    );
                                 }
                                 ColorPickerFocus::HslField => {
                                     editor.set_drag_target(Some(ColorDragTarget::HslField));
-                                    update_drag(editor, ColorDragTarget::HslField, m.column, m.row, &rects);
+                                    update_drag(
+                                        editor,
+                                        ColorDragTarget::HslField,
+                                        m.column,
+                                        m.row,
+                                        &rects,
+                                    );
                                 }
                                 ColorPickerFocus::LightnessSlider => {
                                     editor.set_drag_target(Some(ColorDragTarget::LightnessSlider));
-                                    update_drag(editor, ColorDragTarget::LightnessSlider, m.column, m.row, &rects);
+                                    update_drag(
+                                        editor,
+                                        ColorDragTarget::LightnessSlider,
+                                        m.column,
+                                        m.row,
+                                        &rects,
+                                    );
                                 }
                                 other => editor.set_focus(other),
                             }
                         }
                     }
                     MouseEventKind::Drag(MouseButton::Left) => {
-                        if let Some(target) = editor.drag_target {
+                        if let Some(target) = editor.drag_target() {
                             update_drag(editor, target, m.column, m.row, &rects);
                         }
                     }
@@ -180,7 +198,9 @@ fn update_drag(
         ColorDragTarget::RgbSlider(i) => {
             let bar = rects.rgb_slider_bars[i];
             if bar.width > 0 {
-                let x = column.saturating_sub(bar.x).min(bar.width.saturating_sub(1));
+                let x = column
+                    .saturating_sub(bar.x)
+                    .min(bar.width.saturating_sub(1));
                 let x_frac = x as f32 / bar.width.saturating_sub(1).max(1) as f32;
                 editor.set_rgb_slider_frac(i, x_frac);
             }

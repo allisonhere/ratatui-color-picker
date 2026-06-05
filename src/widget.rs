@@ -88,7 +88,7 @@ impl StatefulWidget for ColorPicker {
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let t = self.theme;
-        let rects = picker_layout(area, state.mode);
+        let rects = picker_layout(area, state.mode());
         Clear.render(rects.overlay, buf);
 
         let outer = Block::bordered()
@@ -100,13 +100,14 @@ impl StatefulWidget for ColorPicker {
 
         let [header, body, footer] = crate::body_rows(inner);
         let [main_col, side_col] =
-            Layout::horizontal([Constraint::Percentage(62), Constraint::Percentage(38)]).areas(body);
+            Layout::horizontal([Constraint::Percentage(62), Constraint::Percentage(38)])
+                .areas(body);
         let [preview_area, _fields_area] =
             Layout::vertical([Constraint::Length(5), Constraint::Fill(1)]).areas(side_col);
 
         let current_rgb = state.to_rgb();
         let current_hex = state.hex();
-        let hsl = state.hsl;
+        let hsl = state.hsl();
         let hsv = state.hsv();
 
         // ── Header: title + RGB/HSL mode pills ──────────────────────────────
@@ -120,14 +121,17 @@ impl StatefulWidget for ColorPicker {
                 Span::styled("\u{e0b6}", Style::new().fg(key_bg).bg(t.bg)),
                 Span::styled(
                     format!(" {} ", key),
-                    Style::new().fg(key_fg).bg(key_bg).add_modifier(Modifier::BOLD),
+                    Style::new()
+                        .fg(key_fg)
+                        .bg(key_bg)
+                        .add_modifier(Modifier::BOLD),
                 ),
                 Span::styled("\u{e0b0}", Style::new().fg(lbl_bg).bg(key_bg)),
                 Span::styled(format!(" {} ", label), Style::new().fg(lbl_fg).bg(lbl_bg)),
                 Span::styled("\u{e0b4}", Style::new().fg(lbl_bg).bg(t.bg)),
             ]
         };
-        let mode_focused = state.focus == ColorPickerFocus::ModeToggle;
+        let mode_focused = state.focus() == ColorPickerFocus::ModeToggle;
         let mut header_spans = vec![Span::styled(
             " Color Picker ",
             Style::new().fg(t.text).add_modifier(Modifier::BOLD),
@@ -138,9 +142,17 @@ impl StatefulWidget for ColorPicker {
                 Style::new().fg(t.accent_fg).add_modifier(Modifier::BOLD),
             ));
         }
-        header_spans.extend(mk_pill("M", "rgb", state.mode == ColorPickerMode::RgbSliders));
+        header_spans.extend(mk_pill(
+            "M",
+            "rgb",
+            state.mode() == ColorPickerMode::RgbSliders,
+        ));
         header_spans.push(Span::raw(" "));
-        header_spans.extend(mk_pill("M", "hsl", state.mode == ColorPickerMode::HslField));
+        header_spans.extend(mk_pill(
+            "M",
+            "hsl",
+            state.mode() == ColorPickerMode::HslField,
+        ));
         Paragraph::new(Line::from(header_spans))
             .style(Style::new().bg(t.bg))
             .render(header, buf);
@@ -148,17 +160,23 @@ impl StatefulWidget for ColorPicker {
         Block::default()
             .style(Style::new().bg(t.surface_bg))
             .render(main_col, buf);
-        Block::default().style(Style::new().bg(t.bg)).render(side_col, buf);
+        Block::default()
+            .style(Style::new().bg(t.bg))
+            .render(side_col, buf);
 
         // ── Main view ───────────────────────────────────────────────────────
-        match state.mode {
+        match state.mode() {
             ColorPickerMode::RgbSliders => {
-                let channels_focus = matches!(state.focus, ColorPickerFocus::RgbSlider(_));
+                let channels_focus = matches!(state.focus(), ColorPickerFocus::RgbSlider(_));
                 let channels_block = Block::bordered()
                     .title(" Channels ")
                     .title_style(Style::new().fg(t.text).add_modifier(Modifier::BOLD))
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(if channels_focus { t.accent_bg } else { t.border }))
+                    .border_style(Style::new().fg(if channels_focus {
+                        t.accent_bg
+                    } else {
+                        t.border
+                    }))
                     .style(Style::new().bg(t.surface_bg));
                 let channels_inner = channels_block.inner(rects.main_view);
                 channels_block.render(rects.main_view, buf);
@@ -171,12 +189,12 @@ impl StatefulWidget for ColorPicker {
                         width: channels_inner.width,
                         height: 1,
                     };
-                    let value = state.rgb[idx];
+                    let value = state.rgb()[idx];
                     let filled = ((value as f32 / 255.0) * slider_width as f32).round() as usize;
                     let bar: String = (0..slider_width)
                         .map(|i| if i < filled { '\u{2588}' } else { '\u{2591}' })
                         .collect();
-                    let is_focus = state.focus == ColorPickerFocus::RgbSlider(idx);
+                    let is_focus = state.focus() == ColorPickerFocus::RgbSlider(idx);
                     let color = match idx {
                         0 => Color::Rgb(255, 96, 96),
                         1 => Color::Rgb(106, 220, 124),
@@ -188,7 +206,11 @@ impl StatefulWidget for ColorPicker {
                             Style::new()
                                 .fg(if is_focus { t.accent_fg } else { t.text })
                                 .bg(if is_focus { t.accent_bg } else { t.surface_bg })
-                                .add_modifier(if is_focus { Modifier::BOLD } else { Modifier::empty() }),
+                                .add_modifier(if is_focus {
+                                    Modifier::BOLD
+                                } else {
+                                    Modifier::empty()
+                                }),
                         ),
                         Span::styled(bar, Style::new().fg(color).bg(t.surface_bg)),
                         Span::styled(
@@ -215,7 +237,10 @@ impl StatefulWidget for ColorPicker {
                         Style::new().fg(t.text),
                     )),
                     Line::from(Span::styled(
-                        format!(" HSV {:.0} / {:.0}% / {:.0}%", hsv.hue, hsv.saturation, hsv.value),
+                        format!(
+                            " HSV {:.0} / {:.0}% / {:.0}%",
+                            hsv.hue, hsv.saturation, hsv.value
+                        ),
                         Style::new().fg(t.muted),
                     )),
                 ])
@@ -231,17 +256,29 @@ impl StatefulWidget for ColorPicker {
                 );
             }
             ColorPickerMode::HslField => {
-                let field_focus = state.focus == ColorPickerFocus::HslField;
+                let field_focus = state.focus() == ColorPickerFocus::HslField;
                 let field_block = Block::bordered()
-                    .title(if field_focus { " Color Field \u{25cf} " } else { " Color Field " })
-                    .title_style(
-                        Style::new()
-                            .fg(t.text)
-                            .add_modifier(if field_focus { Modifier::BOLD } else { Modifier::empty() }),
-                    )
-                    .border_type(if field_focus { BorderType::Double } else { BorderType::Rounded })
+                    .title(if field_focus {
+                        " Color Field \u{25cf} "
+                    } else {
+                        " Color Field "
+                    })
+                    .title_style(Style::new().fg(t.text).add_modifier(if field_focus {
+                        Modifier::BOLD
+                    } else {
+                        Modifier::empty()
+                    }))
+                    .border_type(if field_focus {
+                        BorderType::Double
+                    } else {
+                        BorderType::Rounded
+                    })
                     .border_style(Style::new().fg(if field_focus { t.accent_bg } else { t.border }))
-                    .style(Style::new().bg(if field_focus { t.surface_focus_bg } else { t.surface_bg }));
+                    .style(Style::new().bg(if field_focus {
+                        t.surface_focus_bg
+                    } else {
+                        t.surface_bg
+                    }));
                 let field_area = field_block.inner(rects.main_view);
                 field_block.render(rects.main_view, buf);
                 for row in 0..field_area.height {
@@ -250,9 +287,10 @@ impl StatefulWidget for ColorPicker {
                         let x_frac = col as f32 / field_area.width.saturating_sub(1).max(1) as f32;
                         let top_frac =
                             (row as f32 * 2.0) / (field_area.height.max(1) as f32 * 2.0 - 1.0);
-                        let bottom_frac =
-                            ((row as f32 * 2.0) + 1.0) / (field_area.height.max(1) as f32 * 2.0 - 1.0);
-                        let top = hsv_field_cell(x_frac * 360.0, (1.0 - top_frac) * 100.0, hsv.value);
+                        let bottom_frac = ((row as f32 * 2.0) + 1.0)
+                            / (field_area.height.max(1) as f32 * 2.0 - 1.0);
+                        let top =
+                            hsv_field_cell(x_frac * 360.0, (1.0 - top_frac) * 100.0, hsv.value);
                         let bottom =
                             hsv_field_cell(x_frac * 360.0, (1.0 - bottom_frac) * 100.0, hsv.value);
                         let selected_col = ((hsv.hue / 360.0)
@@ -278,7 +316,11 @@ impl StatefulWidget for ColorPicker {
                         }
                     }
                     Paragraph::new(Line::from(spans))
-                        .style(Style::new().bg(if field_focus { t.surface_focus_bg } else { t.surface_bg }))
+                        .style(Style::new().bg(if field_focus {
+                            t.surface_focus_bg
+                        } else {
+                            t.surface_bg
+                        }))
                         .render(
                             Rect {
                                 x: field_area.x,
@@ -289,24 +331,33 @@ impl StatefulWidget for ColorPicker {
                             buf,
                         );
                 }
-                let value_focus = state.focus == ColorPickerFocus::LightnessSlider;
+                let value_focus = state.focus() == ColorPickerFocus::LightnessSlider;
                 let value_block = Block::bordered()
                     .title(if value_focus { " V \u{25cf} " } else { " V " })
-                    .title_style(
-                        Style::new()
-                            .fg(t.text)
-                            .add_modifier(if value_focus { Modifier::BOLD } else { Modifier::empty() }),
-                    )
-                    .border_type(if value_focus { BorderType::Double } else { BorderType::Rounded })
+                    .title_style(Style::new().fg(t.text).add_modifier(if value_focus {
+                        Modifier::BOLD
+                    } else {
+                        Modifier::empty()
+                    }))
+                    .border_type(if value_focus {
+                        BorderType::Double
+                    } else {
+                        BorderType::Rounded
+                    })
                     .border_style(Style::new().fg(if value_focus { t.accent_bg } else { t.border }))
-                    .style(Style::new().bg(if value_focus { t.surface_focus_bg } else { t.surface_bg }));
+                    .style(Style::new().bg(if value_focus {
+                        t.surface_focus_bg
+                    } else {
+                        t.surface_bg
+                    }));
                 let value_area = value_block.inner(rects.aux_slider);
                 value_block.render(rects.aux_slider, buf);
                 let selected_row = (((100.0 - hsv.value) / 100.0)
                     * value_area.height.saturating_sub(1).max(1) as f32)
                     .round() as u16;
                 for row in 0..value_area.height {
-                    let top_frac = (row as f32 * 2.0) / (value_area.height.max(1) as f32 * 2.0 - 1.0);
+                    let top_frac =
+                        (row as f32 * 2.0) / (value_area.height.max(1) as f32 * 2.0 - 1.0);
                     let bottom_frac =
                         ((row as f32 * 2.0) + 1.0) / (value_area.height.max(1) as f32 * 2.0 - 1.0);
                     let top_value = (1.0 - top_frac.clamp(0.0, 1.0)) * 100.0;
@@ -349,7 +400,10 @@ impl StatefulWidget for ColorPicker {
                 Span::styled("      ", Style::new().bg(tui(current_rgb))),
             ])
         } else {
-            Line::from(vec![Span::styled("      ", Style::new().bg(tui(current_rgb)))])
+            Line::from(vec![Span::styled(
+                "      ",
+                Style::new().bg(tui(current_rgb)),
+            )])
         };
         Paragraph::new(vec![
             Line::from(Span::styled(
@@ -362,11 +416,17 @@ impl StatefulWidget for ColorPicker {
                 Style::new().fg(t.muted),
             )),
             Line::from(Span::styled(
-                format!(" hsl {:.0} {:.0}% {:.0}%", hsl.hue, hsl.saturation, hsl.lightness),
+                format!(
+                    " hsl {:.0} {:.0}% {:.0}%",
+                    hsl.hue, hsl.saturation, hsl.lightness
+                ),
                 Style::new().fg(t.muted),
             )),
             Line::from(Span::styled(
-                format!(" hsv {:.0} {:.0}% {:.0}%", hsv.hue, hsv.saturation, hsv.value),
+                format!(
+                    " hsv {:.0} {:.0}% {:.0}%",
+                    hsv.hue, hsv.saturation, hsv.value
+                ),
                 Style::new().fg(current_fg),
             )),
             Line::from(Span::styled(
@@ -384,46 +444,66 @@ impl StatefulWidget for ColorPicker {
                 .title_style(
                     Style::new()
                         .fg(if focused { t.accent_fg } else { t.muted })
-                        .add_modifier(if focused { Modifier::BOLD } else { Modifier::empty() }),
+                        .add_modifier(if focused {
+                            Modifier::BOLD
+                        } else {
+                            Modifier::empty()
+                        }),
                 )
                 .border_type(BorderType::Rounded)
                 .border_style(Style::new().fg(if focused { t.accent_fg } else { t.border }))
                 .style(Style::new().bg(t.bg))
                 .render(rect, buf);
         };
-        field_box(buf, rects.hex_field, "HEX", state.focus == ColorPickerFocus::HexField);
+        field_box(
+            buf,
+            rects.hex_field,
+            "HEX",
+            state.focus() == ColorPickerFocus::HexField,
+        );
         for (idx, rect) in rects.rgb_fields.iter().enumerate() {
-            field_box(buf, *rect, ["R", "G", "B"][idx], state.focus == ColorPickerFocus::RgbField(idx));
+            field_box(
+                buf,
+                *rect,
+                ["R", "G", "B"][idx],
+                state.focus() == ColorPickerFocus::RgbField(idx),
+            );
         }
         for (idx, rect) in rects.hsl_fields.iter().enumerate() {
-            field_box(buf, *rect, ["H", "S", "L"][idx], state.focus == ColorPickerFocus::HslFieldValue(idx));
+            field_box(
+                buf,
+                *rect,
+                ["H", "S", "L"][idx],
+                state.focus() == ColorPickerFocus::HslFieldValue(idx),
+            );
         }
 
-        let field_value = |buf: &mut Buffer, rect: Rect, value: String, suffix: &str, editing: bool| {
-            let inner = Rect {
-                x: rect.x + 1,
-                y: rect.y + 1,
-                width: rect.width.saturating_sub(2),
-                height: rect.height.saturating_sub(2),
+        let field_value =
+            |buf: &mut Buffer, rect: Rect, value: String, suffix: &str, editing: bool| {
+                let inner = Rect {
+                    x: rect.x + 1,
+                    y: rect.y + 1,
+                    width: rect.width.saturating_sub(2),
+                    height: rect.height.saturating_sub(2),
+                };
+                Paragraph::new(Line::from(vec![
+                    Span::styled(
+                        value,
+                        Style::new()
+                            .fg(if editing { t.accent_fg } else { t.text })
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                    // Caret so an empty field being edited reads as "type here".
+                    Span::styled(
+                        if editing { "\u{258f}" } else { "" },
+                        Style::new().fg(t.accent_fg),
+                    ),
+                    Span::styled(suffix.to_string(), Style::new().fg(t.muted)),
+                ]))
+                .style(Style::new().bg(t.bg))
+                .render(inner, buf);
             };
-            Paragraph::new(Line::from(vec![
-                Span::styled(
-                    value,
-                    Style::new()
-                        .fg(if editing { t.accent_fg } else { t.text })
-                        .add_modifier(Modifier::BOLD),
-                ),
-                // Caret so an empty field being edited reads as "type here".
-                Span::styled(
-                    if editing { "\u{258f}" } else { "" },
-                    Style::new().fg(t.accent_fg),
-                ),
-                Span::styled(suffix.to_string(), Style::new().fg(t.muted)),
-            ]))
-            .style(Style::new().bg(t.bg))
-            .render(inner, buf);
-        };
-        let editing_target = state.text_edit.as_ref().map(|edit| edit.target);
+        let editing_target = state.editing_field();
         field_value(
             buf,
             rects.hex_field,
@@ -452,7 +532,13 @@ impl StatefulWidget for ColorPicker {
 
         // ── Footer hints ────────────────────────────────────────────────────
         let key = |s: &'static str| {
-            Span::styled(s, Style::new().fg(t.accent_fg).bg(t.accent_bg).add_modifier(Modifier::BOLD))
+            Span::styled(
+                s,
+                Style::new()
+                    .fg(t.accent_fg)
+                    .bg(t.accent_bg)
+                    .add_modifier(Modifier::BOLD),
+            )
         };
         let lbl = |s: &'static str| Span::styled(s, Style::new().fg(t.muted));
         Paragraph::new(Line::from(vec![
@@ -487,7 +573,11 @@ mod tests {
             .unwrap();
         let buf = terminal.backend().buffer().clone();
         (0..buf.area.height)
-            .map(|y| (0..buf.area.width).map(|x| buf[(x, y)].symbol()).collect::<String>())
+            .map(|y| {
+                (0..buf.area.width)
+                    .map(|x| buf[(x, y)].symbol())
+                    .collect::<String>()
+            })
             .collect()
     }
 

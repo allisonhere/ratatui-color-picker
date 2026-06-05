@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Format
+        run: cargo fmt --all --check
+      # Library + tests only. The `demo` example depends on `arboard`, whose Linux
+      # clipboard backends need system libraries we don't install here; the library
+      # itself has no such dependency.
+      - name: Clippy
+        run: cargo clippy --lib --tests -- -D warnings
+      - name: Test
+        run: cargo test

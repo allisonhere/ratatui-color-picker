@@ -123,7 +123,7 @@ pub enum EditableField {
 
 /// In-progress inline text edit state.
 #[derive(Debug, Clone)]
-pub struct TextEditState {
+pub(crate) struct TextEditState {
     pub target: EditableField,
     pub value: String,
 }
@@ -181,13 +181,13 @@ impl Default for PickerRects {
 /// methods below, and read the result with [`ColorEditor::to_rgb`] / [`ColorEditor::hex`].
 #[derive(Debug, Clone)]
 pub struct ColorEditor {
-    pub mode: ColorPickerMode,
-    pub focus: ColorPickerFocus,
-    pub rgb: [u8; 3],
-    pub hsl: HslValue,
-    pub hsv: HsvValue,
-    pub drag_target: Option<ColorDragTarget>,
-    pub text_edit: Option<TextEditState>,
+    mode: ColorPickerMode,
+    focus: ColorPickerFocus,
+    rgb: [u8; 3],
+    hsl: HslValue,
+    hsv: HsvValue,
+    drag_target: Option<ColorDragTarget>,
+    text_edit: Option<TextEditState>,
 }
 
 impl ColorEditor {
@@ -223,8 +223,39 @@ impl ColorEditor {
         RgbColor::new(self.rgb[0], self.rgb[1], self.rgb[2])
     }
 
+    /// The raw `[R, G, B]` channels.
+    pub fn rgb(&self) -> [u8; 3] {
+        self.rgb
+    }
+
+    /// The current HSL representation.
+    pub fn hsl(&self) -> HslValue {
+        self.hsl
+    }
+
+    /// The current HSV representation.
     pub fn hsv(&self) -> HsvValue {
         self.hsv
+    }
+
+    /// Which editing surface (RGB sliders / HSL field) is active.
+    pub fn mode(&self) -> ColorPickerMode {
+        self.mode
+    }
+
+    /// The currently focused control.
+    pub fn focus(&self) -> ColorPickerFocus {
+        self.focus
+    }
+
+    /// The active mouse-drag target, if a drag is in progress.
+    pub fn drag_target(&self) -> Option<ColorDragTarget> {
+        self.drag_target
+    }
+
+    /// Which field is currently being text-edited, if any.
+    pub fn editing_field(&self) -> Option<EditableField> {
+        self.text_edit.as_ref().map(|edit| edit.target)
     }
 
     pub fn hex(&self) -> String {
@@ -276,7 +307,10 @@ impl ColorEditor {
                     edit.value.push(c);
                     return true;
                 }
-                if c == '.' && matches!(edit.target, EditableField::Hsl(_)) && !edit.value.contains('.') {
+                if c == '.'
+                    && matches!(edit.target, EditableField::Hsl(_))
+                    && !edit.value.contains('.')
+                {
                     edit.value.push(c);
                     return true;
                 }
@@ -347,9 +381,16 @@ impl ColorEditor {
         self.text_edit = None;
         self.drag_target = None;
         let order = self.focus_order();
-        let idx = order.iter().position(|focus| *focus == self.focus).unwrap_or(0);
+        let idx = order
+            .iter()
+            .position(|focus| *focus == self.focus)
+            .unwrap_or(0);
         let next = if reverse {
-            if idx == 0 { order.len() - 1 } else { idx - 1 }
+            if idx == 0 {
+                order.len() - 1
+            } else {
+                idx - 1
+            }
         } else {
             (idx + 1) % order.len()
         };
@@ -381,7 +422,11 @@ impl ColorEditor {
             _ => 0,
         };
         let next = if reverse {
-            if current == 0 { 2 } else { current - 1 }
+            if current == 0 {
+                2
+            } else {
+                current - 1
+            }
         } else {
             (current + 1) % 3
         };
@@ -397,15 +442,27 @@ impl ColorEditor {
                 true
             }
             ColorPickerFocus::HslFieldValue(0) => {
-                self.set_hsl(self.hsl.hue + delta, self.hsl.saturation, self.hsl.lightness);
+                self.set_hsl(
+                    self.hsl.hue + delta,
+                    self.hsl.saturation,
+                    self.hsl.lightness,
+                );
                 true
             }
             ColorPickerFocus::HslFieldValue(1) => {
-                self.set_hsl(self.hsl.hue, self.hsl.saturation + delta, self.hsl.lightness);
+                self.set_hsl(
+                    self.hsl.hue,
+                    self.hsl.saturation + delta,
+                    self.hsl.lightness,
+                );
                 true
             }
             ColorPickerFocus::HslFieldValue(2) => {
-                self.set_hsl(self.hsl.hue, self.hsl.saturation, self.hsl.lightness + delta);
+                self.set_hsl(
+                    self.hsl.hue,
+                    self.hsl.saturation,
+                    self.hsl.lightness + delta,
+                );
                 true
             }
             ColorPickerFocus::LightnessSlider => {
