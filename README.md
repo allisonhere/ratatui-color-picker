@@ -94,14 +94,15 @@ look shipped here. Prefer to draw it yourself? The same `picker_layout`, `split_
 cargo run --example demo
 ```
 
-Tab/Shift-Tab move focus, `M` toggles RGB/HSL, arrows nudge, Enter edits a field, `#` jumps
-to hex, Esc cancels, `q` quits (and prints the picked color).
+Tab/Shift-Tab move focus, `M` toggles RGB/HSL, arrows nudge (in the HSL field ←→ change hue
+and ↑↓ change saturation), Enter edits a field, `#` jumps to hex, Esc cancels, `q` quits (and
+prints the picked color). **Mouse** works too — click a control to focus it, and click/drag
+inside the HSL field or lightness slider to pick.
 
 ## Status
 
-`0.1` ships the color model, layout, hit-testing, **and a themable `StatefulWidget`**. Mouse
-drag is supported at the model level (`focus_for_point` + the drag/update methods); the bundled
-demo is keyboard-only for brevity. Contributions welcome.
+`0.1` ships the color model, layout, hit-testing, **and a themable `StatefulWidget`**, with
+full keyboard **and** mouse support demonstrated in `examples/demo.rs`. Contributions welcome.
 
 ## License
 
