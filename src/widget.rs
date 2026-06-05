@@ -161,6 +161,7 @@ impl StatefulWidget for ColorPicker {
                 let channels_focus = matches!(state.focus, ColorPickerFocus::RgbSlider(_));
                 let channels_block = Block::bordered()
                     .title(" Channels ")
+                    .title_style(Style::new().fg(t.text).add_modifier(Modifier::BOLD))
                     .border_type(BorderType::Rounded)
                     .border_style(Style::new().fg(if channels_focus { t.accent_bg } else { t.border }))
                     .style(Style::new().bg(t.surface_bg));
@@ -239,7 +240,7 @@ impl StatefulWidget for ColorPicker {
                     .title(if field_focus { " Color Field \u{25cf} " } else { " Color Field " })
                     .title_style(
                         Style::new()
-                            .fg(if field_focus { t.accent_fg } else { t.muted })
+                            .fg(t.text)
                             .add_modifier(if field_focus { Modifier::BOLD } else { Modifier::empty() }),
                     )
                     .border_type(if field_focus { BorderType::Double } else { BorderType::Rounded })
