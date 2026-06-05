@@ -13,3 +13,7 @@ categories = ["command-line-interface"]
 [dependencies]
 ratatui = "0.30"
 palette = "0.7"
+
+[dev-dependencies]
+# Used only by examples/demo.rs (the `#` = copy-hex-to-clipboard key).
+arboard = "3"

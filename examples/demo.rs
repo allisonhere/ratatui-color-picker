@@ -2,7 +2,8 @@
 //!
 //! Keyboard: Tab/Shift-Tab move focus, M toggles RGB/HSL, arrows nudge the focused
 //! control (in the HSL field, ←→ change hue and ↑↓ change saturation), Enter edits the
-//! focused field (then type + Enter to commit), `#` jumps to hex, Esc cancels, `q` quits.
+//! focused field (then type + Enter to commit, Esc to cancel), `#` copies the current hex to
+//! the clipboard, `q` quits.
 //!
 //! Mouse: click a control to focus it, click/drag inside the HSL field or lightness
 //! slider to pick, click the rgb/hsl mode pills to switch.
@@ -72,7 +73,12 @@ fn run(
                     KeyCode::Tab => editor.focus_next(false),
                     KeyCode::BackTab => editor.focus_next(true),
                     KeyCode::Char('m') | KeyCode::Char('M') => editor.toggle_mode(),
-                    KeyCode::Char('#') => editor.start_hex_input(),
+                    KeyCode::Char('#') => {
+                        // Copy the current color's hex to the system clipboard (best-effort).
+                        if let Ok(mut cb) = arboard::Clipboard::new() {
+                            let _ = cb.set_text(editor.hex());
+                        }
+                    }
                     KeyCode::Enter => match editor.focus {
                         ColorPickerFocus::HexField
                         | ColorPickerFocus::RgbField(_)

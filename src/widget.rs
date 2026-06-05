@@ -408,6 +408,11 @@ impl StatefulWidget for ColorPicker {
                         .fg(if editing { t.accent_fg } else { t.text })
                         .add_modifier(Modifier::BOLD),
                 ),
+                // Caret so an empty field being edited reads as "type here".
+                Span::styled(
+                    if editing { "\u{258f}" } else { "" },
+                    Style::new().fg(t.accent_fg),
+                ),
                 Span::styled(suffix.to_string(), Style::new().fg(t.muted)),
             ]))
             .style(Style::new().bg(t.bg))
@@ -453,7 +458,7 @@ impl StatefulWidget for ColorPicker {
             key(" Enter "),
             lbl(" edit "),
             key(" # "),
-            lbl(" hex "),
+            lbl(" copy "),
             key(" Esc "),
             lbl(" cancel "),
         ]))
@@ -489,7 +494,7 @@ mod tests {
         assert_eq!(hint_rows.len(), 1, "hints must occupy exactly one row");
         let hints = hint_rows[0];
         assert!(hints.contains("Tab") && hints.contains("focus"));
-        assert!(hints.contains("hex") && hints.contains("Esc"));
+        assert!(hints.contains("copy") && hints.contains("Esc"));
         // The mouse chip was removed — keyboard hints only.
         assert!(rows.iter().all(|r| !r.contains("Mouse")));
     }

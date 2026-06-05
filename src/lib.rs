@@ -231,14 +231,18 @@ impl ColorEditor {
         self.to_rgb().to_hex()
     }
 
+    /// Begin editing the hex field. Starts with an empty buffer so the next keystrokes
+    /// type a fresh value; committing an empty buffer leaves the color unchanged.
     pub fn start_hex_input(&mut self) {
         self.focus = ColorPickerFocus::HexField;
         self.text_edit = Some(TextEditState {
             target: EditableField::Hex,
-            value: self.hex().trim_start_matches('#').to_string(),
+            value: String::new(),
         });
     }
 
+    /// Begin editing the focused field (hex / R,G,B / H,S,L). Starts with an empty
+    /// buffer; an empty commit is a no-op, Esc cancels.
     pub fn start_editing_focused(&mut self) {
         let target = match self.focus {
             ColorPickerFocus::HexField => EditableField::Hex,
@@ -246,15 +250,10 @@ impl ColorEditor {
             ColorPickerFocus::HslFieldValue(i) => EditableField::Hsl(i),
             _ => return,
         };
-        let value = match target {
-            EditableField::Hex => self.hex().trim_start_matches('#').to_string(),
-            EditableField::Rgb(i) => self.rgb[i].to_string(),
-            EditableField::Hsl(0) => self.hsl.hue.round().to_string(),
-            EditableField::Hsl(1) => self.hsl.saturation.round().to_string(),
-            EditableField::Hsl(2) => self.hsl.lightness.round().to_string(),
-            EditableField::Hsl(_) => String::new(),
-        };
-        self.text_edit = Some(TextEditState { target, value });
+        self.text_edit = Some(TextEditState {
+            target,
+            value: String::new(),
+        });
     }
 
     pub fn is_editing_text(&self) -> bool {
@@ -831,6 +830,30 @@ mod tests {
         // HSL mode exposes no slider bars.
         let hsl = picker_layout(Rect::new(0, 0, 76, 24), ColorPickerMode::HslField);
         assert!(hsl.rgb_slider_bars.iter().all(|b| b.width == 0));
+    }
+
+    #[test]
+    fn hex_field_can_be_typed_and_committed() {
+        let mut e = ColorEditor::from_rgb(0, 0, 0);
+        e.set_focus(ColorPickerFocus::HexField);
+        e.start_editing_focused();
+        for c in "ff8800".chars() {
+            assert!(e.push_input_char(c), "hex digit {c} should be accepted");
+        }
+        assert!(e.commit_text_edit());
+        assert_eq!(e.rgb, [255, 136, 0]);
+    }
+
+    #[test]
+    fn rgb_field_can_be_typed_and_committed() {
+        let mut e = ColorEditor::from_rgb(0, 0, 0);
+        e.set_focus(ColorPickerFocus::RgbField(0));
+        e.start_editing_focused();
+        for c in "200".chars() {
+            assert!(e.push_input_char(c));
+        }
+        assert!(e.commit_text_edit());
+        assert_eq!(e.rgb[0], 200);
     }
 
     #[test]
