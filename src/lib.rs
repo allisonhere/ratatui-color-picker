@@ -22,6 +22,9 @@
 use palette::{FromColor, Hsl, Hsv, RgbHue, Srgb};
 use ratatui::layout::{Constraint, Layout, Rect};
 
+mod widget;
+pub use widget::{ColorPicker, PickerTheme};
+
 /// A 24-bit sRGB color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct RgbColor {

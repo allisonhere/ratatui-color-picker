@@ -13,6 +13,3 @@ categories = ["command-line-interface"]
 [dependencies]
 ratatui = "0.30"
 palette = "0.7"
-
-[dev-dependencies]
-crossterm = "0.29"

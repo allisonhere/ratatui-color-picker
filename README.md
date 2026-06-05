@@ -61,15 +61,39 @@ println!("{}", editor.hex()); // "#89b4fa"
 `start_hex_input` / `start_editing_focused` / `push_input_char` / `pop_input_char` /
 `commit_text_edit` / `cancel_text_edit`, and `focus_for_point` for mouse hit-testing.
 
-Rendering helpers — `picker_layout`, `split_three`, `hsv_field_cell`, `contrast_text`,
-`srgb_f32`, `normalize_hue` — make it easy to draw the gradients and pick readable text colors.
+### Drawing it
+
+A ready-made `StatefulWidget` draws the whole picker; the state is your `ColorEditor`:
+
+```rust
+use ratatui_color_picker::{ColorPicker, PickerTheme};
+
+// in your draw closure:
+frame.render_stateful_widget(
+    ColorPicker::new().original(Some(starting_color)), // optional before→after swatch
+    overlay_area,
+    &mut editor,
+);
+```
+
+Theme it by passing a `PickerTheme` to `.theme(...)` — `PickerTheme::default()` matches the
+look shipped here. Prefer to draw it yourself? The same `picker_layout`, `split_three`,
+`hsv_field_cell`, `contrast_text`, `srgb_f32`, and `normalize_hue` helpers are public.
+
+### Demo
+
+```sh
+cargo run --example demo
+```
+
+Tab/Shift-Tab move focus, `M` toggles RGB/HSL, arrows nudge, Enter edits a field, `#` jumps
+to hex, Esc cancels, `q` quits (and prints the picked color).
 
 ## Status
 
-`0.1` ships the **color model, layout, and hit-testing** — the hard, reusable core. A
-batteries-included `StatefulWidget` that draws the whole picker is the next milestone; until
-then you render from the editor state + `picker_layout` rects (a worked example lives in the
-project this was extracted from). Contributions welcome.
+`0.1` ships the color model, layout, hit-testing, **and a themable `StatefulWidget`**. Mouse
+drag is supported at the model level (`focus_for_point` + the drag/update methods); the bundled
+demo is keyboard-only for brevity. Contributions welcome.
 
 ## License
 
