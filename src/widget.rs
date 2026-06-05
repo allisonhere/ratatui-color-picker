@@ -381,8 +381,13 @@ impl StatefulWidget for ColorPicker {
         let field_box = |buf: &mut Buffer, rect: Rect, title: &str, focused: bool| {
             Block::bordered()
                 .title(format!(" {} ", title))
+                .title_style(
+                    Style::new()
+                        .fg(if focused { t.accent_fg } else { t.muted })
+                        .add_modifier(if focused { Modifier::BOLD } else { Modifier::empty() }),
+                )
                 .border_type(BorderType::Rounded)
-                .border_style(Style::new().fg(if focused { t.accent_bg } else { t.border }))
+                .border_style(Style::new().fg(if focused { t.accent_fg } else { t.border }))
                 .style(Style::new().bg(t.bg))
                 .render(rect, buf);
         };
