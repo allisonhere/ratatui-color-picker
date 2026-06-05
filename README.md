@@ -9,6 +9,14 @@ against a computed layout. You drive it from your event loop and draw it however
 
 > Extracted from a real Zellij theme editor, where it's the daily-driver color picker.
 
+### RGB sliders
+
+![RGB sliders mode](rgb.png)
+
+### HSL field
+
+![HSL field mode](hsl.png)
+
 ## Why
 
 The TUI color-picker space is thin. The handful of existing crates are either pure color
