@@ -339,7 +339,7 @@ impl ColorEditor {
             }
             EditableField::Rgb(i) => {
                 if let Ok(value) = edit.value.parse::<u16>() {
-                    if value <= 255 {
+                    if i < 3 && value <= 255 {
                         let mut rgb = self.rgb;
                         rgb[i] = value as u8;
                         self.set_rgb(rgb);
@@ -353,7 +353,7 @@ impl ColorEditor {
                         0 => self.set_hsl(value, self.hsl.saturation, self.hsl.lightness),
                         1 => self.set_hsl(self.hsl.hue, value, self.hsl.lightness),
                         2 => self.set_hsl(self.hsl.hue, self.hsl.saturation, value),
-                        _ => {}
+                        _ => return false,
                     }
                     return true;
                 }
@@ -394,6 +394,9 @@ impl ColorEditor {
 
     pub fn adjust_rgb_slider_selection(&mut self, delta: i32) {
         if let ColorPickerFocus::RgbSlider(idx) = self.focus {
+            if idx >= 3 {
+                return;
+            }
             let mut rgb = self.rgb;
             rgb[idx] = (i32::from(rgb[idx]) + delta).clamp(0, 255) as u8;
             self.set_rgb(rgb);
@@ -431,6 +434,9 @@ impl ColorEditor {
     pub fn adjust_focused_numeric(&mut self, delta: f32) -> bool {
         match self.focus {
             ColorPickerFocus::RgbSlider(i) | ColorPickerFocus::RgbField(i) => {
+                if i >= 3 {
+                    return false;
+                }
                 let mut rgb = self.rgb;
                 rgb[i] = (f32::from(rgb[i]) + delta).clamp(0.0, 255.0).round() as u8;
                 self.set_rgb(rgb);
@@ -507,7 +513,7 @@ impl ColorEditor {
         }
         match field {
             EditableField::Hex => self.hex(),
-            EditableField::Rgb(i) => self.rgb[i].to_string(),
+            EditableField::Rgb(i) => self.rgb.get(i).map(u8::to_string).unwrap_or_default(),
             EditableField::Hsl(0) => format!("{:.0}", self.hsl.hue),
             EditableField::Hsl(1) => format!("{:.0}", self.hsl.saturation),
             EditableField::Hsl(2) => format!("{:.0}", self.hsl.lightness),
@@ -629,6 +635,7 @@ impl ColorEditor {
         let srgb: Srgb<f32> = Srgb::from_color(hsl);
         let srgb_u8 = srgb.into_format::<u8>();
         self.rgb = [srgb_u8.red, srgb_u8.green, srgb_u8.blue];
+        self.sync_from_rgb_preserve_hue(Some(self.hsl.hue));
     }
 
     fn set_hsv(&mut self, hue: f32, saturation: f32, value: f32) {
@@ -927,5 +934,37 @@ mod tests {
         // 999 > 255, commit should reject and leave the channel unchanged.
         assert!(!editor.commit_text_edit());
         assert_eq!(editor.rgb[0], 0);
+    }
+
+    #[test]
+    fn hsl_edits_refresh_hsv_state() {
+        let mut editor = ColorEditor::from_rgb(0x89, 0xb4, 0xfa);
+        editor.set_focus(ColorPickerFocus::HslFieldValue(2));
+        assert!(editor.adjust_focused_numeric(-20.0));
+
+        let expected = ColorEditor::from_rgb(editor.rgb[0], editor.rgb[1], editor.rgb[2]);
+        assert!((editor.hsv.hue - expected.hsv.hue).abs() < 0.5);
+        assert!((editor.hsv.saturation - expected.hsv.saturation).abs() < 0.5);
+        assert!((editor.hsv.value - expected.hsv.value).abs() < 0.5);
+    }
+
+    #[test]
+    fn invalid_public_channel_indices_do_not_panic() {
+        let mut editor = ColorEditor::from_rgb(10, 20, 30);
+        editor.set_focus(ColorPickerFocus::RgbField(99));
+        assert!(!editor.adjust_focused_numeric(1.0));
+        assert_eq!(editor.rgb, [10, 20, 30]);
+
+        editor.set_focus(ColorPickerFocus::RgbSlider(99));
+        assert!(!editor.adjust_focused_numeric(1.0));
+        assert_eq!(editor.rgb, [10, 20, 30]);
+
+        assert_eq!(editor.field_value(EditableField::Rgb(99)), "");
+
+        editor.set_focus(ColorPickerFocus::RgbField(99));
+        editor.start_editing_focused();
+        assert!(editor.push_input_char('1'));
+        assert!(!editor.commit_text_edit());
+        assert_eq!(editor.rgb, [10, 20, 30]);
     }
 }

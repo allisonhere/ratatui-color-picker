@@ -24,7 +24,7 @@ The TUI color-picker space is thin. The handful of existing crates are either pu
 color *wheel*. This one is a full editor:
 
 - **Two modes** — three **RGB sliders**, or a 2-D **HSL field + lightness slider**
-- **Hex input** — type `#rrggbb` directly
+- **Hex input** — type `rrggbb` directly
 - **Inline numeric editing** — edit any R/G/B or H/S/L channel as text, with validation
   and range clamping
 - **Hue preservation** — desaturating toward grey doesn't lose your hue
@@ -54,7 +54,7 @@ editor.start_editing_focused();    // begin typing into the focused text field
 // editor.push_input_char('a'); editor.commit_text_edit();
 
 // --- when drawing, compute the layout for your overlay Rect ---
-// let rects = picker_layout(overlay_rect, editor.mode);
+// let rects = picker_layout(overlay_rect, editor.mode());
 // ... render using rects + editor state ...
 
 // --- read the result ---
