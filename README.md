@@ -48,9 +48,9 @@ use ratatui_color_picker::{ColorEditor, ColorPickerFocus, picker_layout};
 let mut editor = ColorEditor::from_color([0x89, 0xb4, 0xfa]);
 
 // --- in your event loop, translate input into editor calls ---
-editor.focus_next(false);          // Tab
+editor.focus_next(false);          // Tab — move focus across controls
 editor.adjust_focused_numeric(5.0); // ↑ on the focused channel
-editor.start_hex_input();          // '#'
+editor.start_editing_focused();    // begin typing into the focused text field
 // editor.push_input_char('a'); editor.commit_text_edit();
 
 // --- when drawing, compute the layout for your overlay Rect ---
