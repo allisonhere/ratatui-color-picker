@@ -346,13 +346,6 @@ impl ColorEditor {
     pub fn focus_next(&mut self, reverse: bool) {
         self.text_edit = None;
         self.drag_target = None;
-        if self.mode == ColorPickerMode::HslField {
-            self.focus = match self.focus {
-                ColorPickerFocus::LightnessSlider => ColorPickerFocus::HslField,
-                _ => ColorPickerFocus::LightnessSlider,
-            };
-            return;
-        }
         let order = self.focus_order();
         let idx = order.iter().position(|focus| *focus == self.focus).unwrap_or(0);
         let next = if reverse {
@@ -854,6 +847,21 @@ mod tests {
         }
         assert!(e.commit_text_edit());
         assert_eq!(e.rgb[0], 200);
+    }
+
+    #[test]
+    fn tab_reaches_text_fields_in_hsl_mode() {
+        let mut e = ColorEditor::from_rgb(10, 20, 30);
+        e.toggle_mode(); // -> HSL field mode
+        assert_eq!(e.mode, ColorPickerMode::HslField);
+        let mut seen = Vec::new();
+        for _ in 0..12 {
+            seen.push(e.focus);
+            e.focus_next(false);
+        }
+        assert!(seen.contains(&ColorPickerFocus::HexField));
+        assert!(seen.contains(&ColorPickerFocus::RgbField(0)));
+        assert!(seen.contains(&ColorPickerFocus::HslFieldValue(2)));
     }
 
     #[test]
