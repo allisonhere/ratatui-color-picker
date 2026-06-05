@@ -98,12 +98,7 @@ impl StatefulWidget for ColorPicker {
         let inner = outer.inner(rects.overlay);
         outer.render(rects.overlay, buf);
 
-        let [header, body, footer] = Layout::vertical([
-            Constraint::Length(1),
-            Constraint::Min(16),
-            Constraint::Length(2),
-        ])
-        .areas(inner);
+        let [header, body, footer] = crate::body_rows(inner);
         let [main_col, side_col] =
             Layout::horizontal([Constraint::Percentage(62), Constraint::Percentage(38)]).areas(body);
         let [preview_area, _fields_area] =
@@ -449,25 +444,52 @@ impl StatefulWidget for ColorPicker {
             Span::styled(s, Style::new().fg(t.accent_fg).bg(t.accent_bg).add_modifier(Modifier::BOLD))
         };
         let lbl = |s: &'static str| Span::styled(s, Style::new().fg(t.muted));
-        Paragraph::new(vec![
-            Line::from(vec![
-                key(" Tab "),
-                lbl(" focus  "),
-                key(" M "),
-                lbl(" switch  "),
-                key(" Enter "),
-                lbl(" edit/keep"),
-            ]),
-            Line::from(vec![
-                key(" Mouse "),
-                lbl(" drag  "),
-                key(" # "),
-                lbl(" hex  "),
-                key(" Esc "),
-                lbl(" cancel"),
-            ]),
-        ])
+        Paragraph::new(Line::from(vec![
+            key(" Tab "),
+            lbl(" focus "),
+            key(" M "),
+            lbl(" switch "),
+            key(" Enter "),
+            lbl(" edit "),
+            key(" # "),
+            lbl(" hex "),
+            key(" Esc "),
+            lbl(" cancel "),
+        ]))
         .style(Style::new().bg(t.bg))
         .render(footer, buf);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ColorEditor;
+    use ratatui::backend::TestBackend;
+    use ratatui::Terminal;
+
+    fn rendered_rows() -> Vec<String> {
+        let mut editor = ColorEditor::from_rgb(0x89, 0xb4, 0xfa);
+        let mut terminal = Terminal::new(TestBackend::new(76, 24)).unwrap();
+        terminal
+            .draw(|f| f.render_stateful_widget(ColorPicker::new(), f.area(), &mut editor))
+            .unwrap();
+        let buf = terminal.backend().buffer().clone();
+        (0..buf.area.height)
+            .map(|y| (0..buf.area.width).map(|x| buf[(x, y)].symbol()).collect::<String>())
+            .collect()
+    }
+
+    #[test]
+    fn footer_hints_are_one_keyboard_row() {
+        let rows = rendered_rows();
+        // "cancel" is unique to the footer hint strip.
+        let hint_rows: Vec<&String> = rows.iter().filter(|r| r.contains("cancel")).collect();
+        assert_eq!(hint_rows.len(), 1, "hints must occupy exactly one row");
+        let hints = hint_rows[0];
+        assert!(hints.contains("Tab") && hints.contains("focus"));
+        assert!(hints.contains("hex") && hints.contains("Esc"));
+        // The mouse chip was removed — keyboard hints only.
+        assert!(rows.iter().all(|r| !r.contains("Mouse")));
     }
 }

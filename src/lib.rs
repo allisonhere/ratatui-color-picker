@@ -622,6 +622,17 @@ impl ColorEditor {
 ///
 /// Pass the rectangle you want the picker to occupy; the layout is computed inside it.
 /// The result feeds both rendering and [`ColorEditor::focus_for_point`].
+/// The header / body / footer row split, shared between [`picker_layout`] and the
+/// widget so the two can't drift. Footer is a single row.
+pub(crate) fn body_rows(inner: Rect) -> [Rect; 3] {
+    Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Min(16),
+        Constraint::Length(1),
+    ])
+    .areas(inner)
+}
+
 pub fn picker_layout(overlay: Rect, mode: ColorPickerMode) -> PickerRects {
     let inner = Rect::new(
         overlay.x + 1,
@@ -629,12 +640,7 @@ pub fn picker_layout(overlay: Rect, mode: ColorPickerMode) -> PickerRects {
         overlay.width.saturating_sub(2),
         overlay.height.saturating_sub(2),
     );
-    let [_header, body, _footer] = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Min(16),
-        Constraint::Length(2),
-    ])
-    .areas(inner);
+    let [_header, body, _footer] = body_rows(inner);
     let [main_col, side_col] =
         Layout::horizontal([Constraint::Percentage(62), Constraint::Percentage(38)]).areas(body);
     let (main_view, aux_slider) = match mode {
