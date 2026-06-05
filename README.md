@@ -90,7 +90,11 @@ look shipped here. Prefer to draw it yourself? The same `picker_layout`, `split_
 
 ### Demo
 
+Clone the repo and run the bundled example:
+
 ```sh
+git clone https://github.com/allisonhere/ratatui-color-picker
+cd ratatui-color-picker
 cargo run --example demo
 ```
 
