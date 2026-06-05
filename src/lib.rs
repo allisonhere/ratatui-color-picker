@@ -223,27 +223,22 @@ impl ColorEditor {
         RgbColor::new(self.rgb[0], self.rgb[1], self.rgb[2])
     }
 
-    /// The raw `[R, G, B]` channels.
     pub fn rgb(&self) -> [u8; 3] {
         self.rgb
     }
 
-    /// The current HSL representation.
     pub fn hsl(&self) -> HslValue {
         self.hsl
     }
 
-    /// The current HSV representation.
     pub fn hsv(&self) -> HsvValue {
         self.hsv
     }
 
-    /// Which editing surface (RGB sliders / HSL field) is active.
     pub fn mode(&self) -> ColorPickerMode {
         self.mode
     }
 
-    /// The currently focused control.
     pub fn focus(&self) -> ColorPickerFocus {
         self.focus
     }

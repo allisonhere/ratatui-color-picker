@@ -110,7 +110,7 @@ impl StatefulWidget for ColorPicker {
         let hsl = state.hsl();
         let hsv = state.hsv();
 
-        // ── Header: title + RGB/HSL mode pills ──────────────────────────────
+        // header + mode pills
         let mk_pill = |key: &str, label: &str, active: bool| -> Vec<Span<'static>> {
             let (key_bg, key_fg, lbl_bg, lbl_fg) = if active {
                 (t.accent_bg, t.accent_fg, t.subtle_bg, t.subtle_fg)
@@ -164,7 +164,7 @@ impl StatefulWidget for ColorPicker {
             .style(Style::new().bg(t.bg))
             .render(side_col, buf);
 
-        // ── Main view ───────────────────────────────────────────────────────
+        // main view
         match state.mode() {
             ColorPickerMode::RgbSliders => {
                 let channels_focus = matches!(state.focus(), ColorPickerFocus::RgbSlider(_));
@@ -180,7 +180,7 @@ impl StatefulWidget for ColorPicker {
                     .style(Style::new().bg(t.surface_bg));
                 let channels_inner = channels_block.inner(rects.main_view);
                 channels_block.render(rects.main_view, buf);
-                // Same geometry the layout exposes for mouse hit-testing.
+                // bar widths come from the layout so drag hit-testing lines up
                 let slider_width = rects.rgb_slider_bars[0].width as usize;
                 for (idx, label) in ["R", "G", "B"].into_iter().enumerate() {
                     let row_rect = Rect {
@@ -391,7 +391,7 @@ impl StatefulWidget for ColorPicker {
             }
         }
 
-        // ── Side column: preview swatch + readouts ──────────────────────────
+        // side column: swatch + readouts
         let current_fg = tui(contrast_text(current_rgb));
         let before_line = if let Some(orig) = self.original {
             Line::from(vec![
@@ -437,7 +437,7 @@ impl StatefulWidget for ColorPicker {
         .style(Style::new().bg(t.bg))
         .render(preview_area, buf);
 
-        // ── Field boxes (hex / rgb / hsl) ───────────────────────────────────
+        // hex / rgb / hsl field boxes
         let field_box = |buf: &mut Buffer, rect: Rect, title: &str, focused: bool| {
             Block::bordered()
                 .title(format!(" {} ", title))
@@ -493,7 +493,7 @@ impl StatefulWidget for ColorPicker {
                             .fg(if editing { t.accent_fg } else { t.text })
                             .add_modifier(Modifier::BOLD),
                     ),
-                    // Caret so an empty field being edited reads as "type here".
+                    // caret while editing
                     Span::styled(
                         if editing { "\u{258f}" } else { "" },
                         Style::new().fg(t.accent_fg),
@@ -530,7 +530,6 @@ impl StatefulWidget for ColorPicker {
             );
         }
 
-        // ── Footer hints ────────────────────────────────────────────────────
         let key = |s: &'static str| {
             Span::styled(
                 s,

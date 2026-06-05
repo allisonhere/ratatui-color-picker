@@ -41,7 +41,7 @@ fn run(
     original: RgbColor,
 ) -> io::Result<()> {
     loop {
-        // Compute the picker area once so drawing and mouse hit-testing agree.
+        // one rect for both draw and hit-testing
         let (w, h) = ratatui::crossterm::terminal::size()?;
         let area = centered(Rect::new(0, 0, w, h), 76, 24);
 
@@ -74,7 +74,6 @@ fn run(
                     KeyCode::BackTab => editor.focus_next(true),
                     KeyCode::Char('m') | KeyCode::Char('M') => editor.toggle_mode(),
                     KeyCode::Char('#') => {
-                        // Copy the current color's hex to the system clipboard (best-effort).
                         if let Ok(mut cb) = arboard::Clipboard::new() {
                             let _ = cb.set_text(editor.hex());
                         }
